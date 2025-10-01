@@ -60,11 +60,11 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository_owner }}/log-ingestion-analysis-service
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest 
+          tags: ghcr.io/${{ github.repository_owner }}/log-ingestion-analysis-service:latest 
