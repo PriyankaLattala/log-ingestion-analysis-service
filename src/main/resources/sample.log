@@ -1,1 +1,5 @@
-2025-09-30 10:15:42 INFO  Application started successfully.
+{"@timestamp":"2025-10-01T13:32:43.082Z","log.level":"INFO","message":"request received {\"operation\":\"Test\",\"type\":\"Test\",\"context\":{\"documentid\":\"1234\"}}"}
+{"@timestamp":"2025-10-01T13:32:43.095Z","log.level":"INFO","message":"request received {\"operation\":\"Upload\",\"type\":\"PDF\",\"context\":{\"documentid\":\"1234\"}}"}
+{"@timestamp":"2025-10-01T13:32:44.100Z","log.level":"ERROR","message":"processing failed {\"operation\":\"Parse\",\"type\":\"XML\",\"context\":{\"documentid\":\"5678\"}}"}
+{"@timestamp":"2025-10-01T13:32:45.212Z","log.level":"WARN","message":"slow response {\"operation\":\"Validate\",\"type\":\"JSON\",\"context\":{\"documentid\":\"1234\"}}"}
+{"@timestamp":"2025-10-01T13:32:46.301Z","log.level":"INFO","message":"completed {\"operation\":\"Finalize\",\"type\":\"ZIP\",\"context\":{\"documentid\":\"5678\"}}"}

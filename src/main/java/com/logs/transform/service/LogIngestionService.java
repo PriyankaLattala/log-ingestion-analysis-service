@@ -1,46 +1,69 @@
 package com.logs.transform.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.logs.transform.datasource.model.LogDocument;
+import com.logs.transform.datasource.repository.LogDocumentRepository;
+import com.logs.transform.exception.model.FileParseException;
 import java.io.BufferedReader;
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import com.logs.transform.model.LogEntry;
-import com.logs.transform.repository.LogEntryRepository;
 @Service
+@AllArgsConstructor
 public class LogIngestionService {
 
-    private LogEntryRepository logEntryRepository;
-    String regex = "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})\\s+(INFO|ERROR|WARN|DEBUG|TRACE)\\s+(.*)$";
-        private final Pattern loPattern = Pattern.compile(regex);
-        private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+  private LogDocumentRepository repository;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public LogIngestionService(LogEntryRepository logEntryRepository){
-        this.logEntryRepository = logEntryRepository;
-    }
+  /**
+   * Save the provided log document to the database.
+   *
+   * @param file the uploaded log file
+   * @throws JsonProcessingException if the provided log content cannot be parsed as valid JSON
+   * @throws FileParseException if the provided log content is empty or cannot be parsed
+   */
+  public void uploadLogFile(MultipartFile file) {
+    try {
+      List<JsonNode> jsonLogs = new ArrayList<>();
 
-    public void parseAndSave(InputStream inputStream) {
-       try{
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        reader.lines().forEach(line->{
-            Matcher matcher = loPattern.matcher(line);
-            if(matcher.matches()){
-                LocalDateTime time = LocalDateTime.parse(matcher.group(1), formatter);
-                String level = matcher.group(2);
-                String message = matcher.group(3);
-                LogEntry entry = new LogEntry(time, level, message);
-                logEntryRepository.save(entry);
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+        reader.lines().forEach(line -> {
+          if (!line.trim().isEmpty()) {
+            try {
+              jsonLogs.add(objectMapper.readTree(line));
+            } catch (JsonProcessingException e) {
+              throw new RuntimeException("Invalid JSON line: " + line, e);
             }
+          }
         });
-       } catch(Exception e){
-        throw new RuntimeException("Error parsing log file");
-       }
-        
-    }
+      }
 
+      if (jsonLogs.isEmpty()) {
+        throw new FileParseException("File has no valid log entries.");
+      }
+      String jsonArrayString = objectMapper.writeValueAsString(jsonLogs);
+
+      createLogDocument(file, jsonArrayString);
+    } catch (IOException e) {
+      throw new FileParseException("Failed to read the uploaded log file: " + e.getMessage(), e);
+    }
+  }
+
+  private void createLogDocument(MultipartFile file, String jsonArrayString) {
+    LogDocument document = new LogDocument();
+    document.setFilename(file.getOriginalFilename());
+    document.setUploadedAt(LocalDateTime.now());
+    document.setContent(jsonArrayString);
+
+    repository.save(document);
+  }
 }
