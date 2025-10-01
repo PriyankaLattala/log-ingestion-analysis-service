@@ -1,10 +1,12 @@
 package com.logs.transform.exception;
 
+import com.logs.transform.exception.model.BadRequestException;
+import com.logs.transform.exception.model.EntityNotFoundException;
 import com.logs.transform.exception.model.ErrorResponse;
 import com.logs.transform.exception.model.FileParseException;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
+
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +35,16 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<String> handleOtherExceptions(Exception ex) {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Something went wrong.");
+  }
+
+  @ExceptionHandler(EntityNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
+    return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+  }
+
+  @ExceptionHandler(BadRequestException.class)
+  public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
+    return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
   }
 
   private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message) {
