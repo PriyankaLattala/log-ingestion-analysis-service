@@ -26,6 +26,7 @@ public class LogAnalysisControllerTest {
   @InjectMocks
   private LogAnalysisController controller;
 
+  @SuppressWarnings("null")
   @Test
   void getByDocumentAndLevel_shouldReturnLogs_whenValidRequest() {
     Long documentId = 1L;
