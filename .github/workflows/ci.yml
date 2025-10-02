@@ -1,0 +1,88 @@
+name: CI/CD Pipeline
+
+env:
+  GHCR_USERNAME: ${{ github.repository_owner }}
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 21
+      
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven
+      
+      - name: Build and test with Maven
+        run: mvn clean install
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-transform-service
+          path: target/*.jar
+  
+  docker:
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download built JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: log-transform-service
+          path: target/*.jar
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GIT_PASS }}
+
+      - name: Convert repo owner to lowercase
+        id: lowercase
+        run: |
+          echo "owner_lc=${GHCR_USERNAME,,}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.lowercase.outputs.owner_lc }}/log-ingestion-analysis-service
+          tags: |
+           type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ghcr.io/${{ steps.lowercase.outputs.owner_lc }}/log-ingestion-analysis-service:latest
