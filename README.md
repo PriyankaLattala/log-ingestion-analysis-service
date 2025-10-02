@@ -64,6 +64,11 @@ This microservice is designed to:
  ./mvnw spring-boot:run
  ```
 
+ ## Run tests
+ - mvn test to run Junit tests.
+ - mvn verify to run both Junit and integration tests.
+ - mvn failsafe:integration-test failsafe:verify to run only Integration tests.
+
 ## Build, run and push Docker image
 
  docker build -t ghcr.io/<your-username>/log-ingestion-analysis-service:latest .
