@@ -39,9 +39,7 @@ public class LogAnalysisServiceTest {
       "{\"log.level\":\"ERROR\",\"message\":\"another error message\"}" +
       "]";
 
-    LogDocument mockDocument = new LogDocument();
-    mockDocument.setId(documentId);
-    mockDocument.setContent(jsonContent);
+    LogDocument mockDocument = LogDocument.builder().content(jsonContent).id(documentId).build();
 
     when(repository.findById(documentId)).thenReturn(Optional.of(mockDocument));
 
@@ -73,9 +71,7 @@ public class LogAnalysisServiceTest {
     Long documentId = 1L;
     String level = "  ";
 
-    LogDocument mockDocument = new LogDocument();
-    mockDocument.setId(documentId);
-    mockDocument.setContent("[]");
+    LogDocument mockDocument = LogDocument.builder().id(documentId).content("[]").build();
     when(repository.findById(documentId)).thenReturn(Optional.of(mockDocument));
 
     BadRequestException ex = assertThrows(BadRequestException.class, () ->
@@ -91,9 +87,7 @@ public class LogAnalysisServiceTest {
 
     String invalidJson = "{invalid-json}";
 
-    LogDocument mockDocument = new LogDocument();
-    mockDocument.setId(documentId);
-    mockDocument.setContent(invalidJson);
+    LogDocument mockDocument = LogDocument.builder().id(documentId).content(invalidJson).build();
     when(repository.findById(documentId)).thenReturn(Optional.of(mockDocument));
 
     RuntimeException ex = assertThrows(RuntimeException.class, () ->

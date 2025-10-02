@@ -63,10 +63,9 @@ public class LogIngestionService {
   }
 
   private void createLogDocument(MultipartFile file, String jsonArrayString) {
-    LogDocument document = new LogDocument();
-    document.setFilename(file.getOriginalFilename());
-    document.setUploadedAt(LocalDateTime.now());
-    document.setContent(jsonArrayString);
+    LogDocument document = LogDocument.builder().
+                                      content(jsonArrayString).filename(file.getOriginalFilename())
+                                      .uploadedAt(LocalDateTime.now()).build();
 
     repository.save(document);
   }
