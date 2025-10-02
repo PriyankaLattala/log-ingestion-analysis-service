@@ -28,13 +28,13 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException ex) {
-    return ResponseEntity.badRequest().body(ex.getMessage());
+  public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+    return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<String> handleOtherExceptions(Exception ex) {
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Something went wrong.");
+  public ResponseEntity<ErrorResponse> handleOtherExceptions(Exception ex) {
+    return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
   }
 
   @ExceptionHandler(EntityNotFoundException.class)

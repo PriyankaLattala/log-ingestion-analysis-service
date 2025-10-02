@@ -82,7 +82,7 @@ public class LogIngestionServiceTest {
       service.uploadLogFile(emptyFile);
     });
 
-    assertEquals("File has no valid log entries.", exception.getMessage());
+    assertEquals("File contains no valid log entries.", exception.getMessage());
     verify(repository, never()).save(any());
   }
 

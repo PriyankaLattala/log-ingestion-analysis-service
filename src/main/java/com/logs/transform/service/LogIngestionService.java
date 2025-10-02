@@ -21,40 +21,44 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 public class LogIngestionService {
 
-  private LogDocumentRepository repository;
+  private final LogDocumentRepository repository;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
-   * Save the provided log document to the database.
+   * Saves the uploaded log file as a LogDocument. Each line in the file is expected to be a JSON object.
    *
    * @param file the uploaded log file
-   * @throws JsonProcessingException if the provided log content cannot be parsed as valid JSON
-   * @throws FileParseException if the provided log content is empty or cannot be parsed
+   * @throws FileParseException if file is empty or contains invalid JSON
    */
   public void uploadLogFile(MultipartFile file) {
-    try {
-      List<JsonNode> jsonLogs = new ArrayList<>();
+    List<JsonNode> jsonLogs = new ArrayList<>();
 
-      try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-        reader.lines().forEach(line -> {
-          if (!line.trim().isEmpty()) {
-            try {
-              jsonLogs.add(objectMapper.readTree(line));
-            } catch (JsonProcessingException e) {
-              throw new RuntimeException("Invalid JSON line: " + line, e);
-            }
-          }
-        });
-      }
+    try (BufferedReader reader = new BufferedReader(
+      new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 
-      if (jsonLogs.isEmpty()) {
-        throw new FileParseException("File has no valid log entries.");
-      }
-      String jsonArrayString = objectMapper.writeValueAsString(jsonLogs);
+      reader.lines()
+            .filter(line -> !line.trim().isEmpty())
+            .forEach(line -> {
+              try {
+                jsonLogs.add(objectMapper.readTree(line));
+              } catch (JsonProcessingException e) {
+                throw new FileParseException("Invalid JSON line: " + line, e);
+              }
+            });
 
-      createLogDocument(file, jsonArrayString);
     } catch (IOException e) {
-      throw new FileParseException("Failed to read the uploaded log file: " + e.getMessage(), e);
+      throw new FileParseException("Failed to read uploaded file: " + e.getMessage(), e);
+    }
+
+    if (jsonLogs.isEmpty()) {
+      throw new FileParseException("File contains no valid log entries.");
+    }
+
+    try {
+      String jsonArrayString = objectMapper.writeValueAsString(jsonLogs);
+      createLogDocument(file, jsonArrayString);
+    } catch (JsonProcessingException e) {
+      throw new FileParseException("Failed to serialize log entries to JSON array.", e);
     }
   }
 

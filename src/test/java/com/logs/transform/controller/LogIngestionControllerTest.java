@@ -6,6 +6,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.logs.transform.exception.model.BadRequestException;
 import com.logs.transform.service.LogIngestionService;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 public class LogIngestionControllerTest {
@@ -52,11 +55,23 @@ public class LogIngestionControllerTest {
       new byte[0]
     );
 
-    IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+    BadRequestException thrown = assertThrows(BadRequestException.class, () -> {
       controller.uploadLogFile(emptyFile);
     });
 
-    assertEquals("Uploaded file is empty", thrown.getMessage());
+    assertEquals("Uploaded file is empty or missing", thrown.getMessage());
     verify(logIngestionService, never()).uploadLogFile(any());
   }
+
+  @Test
+  void uploadLogFile_shouldThrowException_whenFileExtensionIsInvalid() {
+    MultipartFile file = new MockMultipartFile("file", "file.pdf", "application/pdf", "dummy".getBytes());
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+      controller.uploadLogFile(file)
+    );
+
+    assertEquals("Only .log or .txt files are supported", ex.getMessage());
+  }
+
 }
