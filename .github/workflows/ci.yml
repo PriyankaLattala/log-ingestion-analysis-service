@@ -1,5 +1,8 @@
 name: CI/CD Pipeline
 
+env:
+  GHCR_USERNAME: ${{ github.repository_owner }}
+
 on:
   push:
     branches:
@@ -56,15 +59,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GIT_PASS }}
 
+      - name: Convert repo owner to lowercase
+        id: lowercase
+        run: |
+          echo "owner_lc=${GHCR_USERNAME,,}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}.toLowerCase()/log-ingestion-analysis-service
+          images: ghcr.io/${{ steps.lowercase.outputs.owner_lc }}/log-ingestion-analysis-service
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}.toLowerCase()/log-ingestion-analysis-service:latest 
+          tags: ghcr.io/${{ steps.lowercase.outputs.owner_lc }}/log-ingestion-analysis-service:latest 
